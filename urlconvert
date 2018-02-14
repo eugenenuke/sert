@@ -1,0 +1,46 @@
+#!/bin/bash
+################################################################################
+#
+# Скрипт конвертирует список URL в список, пригодный для squid, в формате url_regexp
+# Строки, начинающиеся не с http - игнорируются
+# Международные имена доменов конвертируются в punycode
+#
+#	Eugene Nuke (eugenenuke@gmail.com)
+#	url_convert v1.0
+#
+################################################################################
+
+while read str
+do
+	# игнорируем всё, что начинается не с 'http'
+	if [[ ${str%%:*} != "http" ]]; then continue; fi
+
+	# убираем "http://" из начала URL
+	str=${str#http://}
+	
+	# выделяем путь после домена
+	urlpath=${str#*/}
+
+	# выделяем сам домен
+	server=${str%%/*}
+
+	if [[ $server =~ ^.*\..*\..*\..*$ ]]; then 
+		tld=${server#[^.]*.*.*}
+	elif [[ $server =~ ^.*\..*\..*$ ]]; then 
+		tld=${server#[^.]*.*}
+	elif [[ $server =~ ^.*\..*$ ]]; then
+		tld=$server
+	fi
+
+	# конвертируем русские имена доменов в punycode
+	tld=$(idn <<< $tld)
+
+	# экранируем '.','(',')','&' в URL
+	server="(.*\.)?$(sed 's#\.#\\.#g' <<< $tld)"
+	urlpath="$(sed 's#[.)(?]#\\&#g' <<< $urlpath)"
+
+	url1="^http://$server/$urlpath\$"
+	url2="^http://$server/.*\.(jpe?g)|(css)|(js)|(gif)|(png)\$"
+
+	echo $url1; echo $url2
+done
