@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+#
+# Скрипт конвертирует строку, закодированную urlencode, обратно в текст
+#
+
+from urllib.parse import unquote
+
+print(unquote(input()))
